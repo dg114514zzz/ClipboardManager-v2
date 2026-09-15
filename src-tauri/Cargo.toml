@@ -1,0 +1,37 @@
+[package]
+name = "clipboardmanager-v2"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "clipboardmanager_v2_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-log = "2.9.0"
+tauri-plugin-global-shortcut = "2.3.2"
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-dialog = "2"
+dirs = "6.0.0"
+log = "0.4.33"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+chrono = "0.4.45"
+image = "0.25.10"
+arboard = "3.6.1"
+sha2 = "0.11.0"
+base64 = "0.23.1"
+raw-window-handle = "0.6"
+
