@@ -1,7 +1,65 @@
-# Tauri + React + Typescript
+# ClipboardManager v2
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Windows 剪贴板历史管理器：自动记录每一次复制的内容（文本 / 图片 / 文件），随时回溯、搜索、再复制。基于 Tauri 2 + React 19 + Rust 构建。
 
-## Recommended IDE Setup
+## 功能特性
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+### 记录
+
+- **全类型记录**：自动捕获复制的纯文本、图像内容（浏览器/聊天窗口里的画面）、文件与文件夹（含多选）。
+- **事件驱动监听**：基于 `AddClipboardFormatListener`，内容一变立即捕获，无轮询、空闲零 CPU 占用。
+- **图片不丢**：抓取与处理分离 + 磁盘缓冲（上限 2GB），快速连续复制大量图片也不漏记。
+- **按内容识别图片**：不依赖扩展名，按文件魔数识别 PNG/JPEG/GIF/BMP/WEBP/TIFF/ICO/AVIF，改错后缀也能正确入库。
+- **智能去重**：文本精确匹配、图片按像素 SHA-256 指纹、文件按路径集合判定。重复复制同一内容不产生新记录，而是把原记录拉到列表顶部并刷新时间（程序内部复制除外，不改变原位置）。
+
+### 使用
+
+- **一键再复制**：点击任意记录即可放回剪贴板。图片记录同时写入位图与文件路径——既可粘贴进聊天窗口，也可在文件管理器直接粘贴出图片文件。
+- **搜索**：全文搜索（SQLite FTS5），中文按单字切分，子串可命中。
+- **收藏与置顶**：收藏的记录不被自动清理；置顶的记录永远排在最前。
+- **多选批量复制**：纯文本 / 纯图片一次最多选 50 条；含文件时一次最多 10 条。
+- **文件定位**：在资源管理器中选中记录对应的全部源文件。
+- **时间显示**：精确到分钟的绝对时间（如 `2026-08-26 17:27`）。
+
+### 管理
+
+- **数据目录可迁移**：一键搬到其他盘符，自动修正数据库中的图片/缩略图路径，迁移后自检修复。
+- **自动清理**：非收藏记录超过保留天数自动删除；图片总占用超过 1GB 时按最旧优先清理。收藏的记录永不清理。
+- **托盘常驻**：关闭窗口即最小化到托盘；全局快捷键 `Alt+Shift+V` 呼出/隐藏；支持开机自启。
+- **自带日志**：运行日志写入数据目录 `logs\clipboard.log`，方便排查问题。
+
+## 技术栈
+
+| 层 | 技术 |
+|---|---|
+| 桌面框架 | Tauri 2 |
+| 前端 | React 19 + TypeScript + Vite 7 + Tailwind CSS 4 |
+| 后端 | Rust（tokio 无关的同步线程模型，事件驱动） |
+| 存储 | SQLite（rusqlite，bundled）+ FTS5 全文索引 |
+| 图片 | image crate（PNG 转存 + 缩略图）、arboard（位图读写） |
+
+## 开发
+
+```bash
+# 安装前端依赖
+npm install
+
+# 开发模式（热更新）
+npm run tauri dev
+
+# 构建发布版（生成 NSIS / MSI 安装包与绿色版 exe）
+npm run tauri build
+```
+
+构建产物位于 `src-tauri/target/release/`：
+
+- `clipboardmanager-v2.exe` — 绿色免安装版
+- `bundle/nsis/*.exe` — NSIS 安装包
+- `bundle/msi/*.msi` — MSI 安装包
+
+## 数据存储
+
+- 配置：`%APPDATA%\ClipboardManager\config.json`
+- 数据（数据库、图片、缩略图、日志）：默认与配置同目录（`%APPDATA%\ClipboardManager`），可在程序设置中一键迁移到任意位置（如其他盘符）。
+
+> 该目录为运行时数据，不随本仓库备份。`target\`、`node_modules\`、`dist\`、`verify\` 为可再生产物，已被 `.gitignore` 排除。
