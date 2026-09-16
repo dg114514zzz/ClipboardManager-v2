@@ -70,8 +70,22 @@ pub fn save_settings(
     }
 
     // 2) 开机自启写 HKCU\...\Run（tauri-plugin-autostart）
+    //    先比对系统实际状态，一致则跳过：disable() 实际是"删除注册表项"，删一个本就不存在的项
+    //    会返回 os error 2（ERROR_FILE_NOT_FOUND），导致"上次已关闭、本次只改了别的设置"也误报失败
     use tauri_plugin_autostart::ManagerExt;
     let auto = app.autolaunch();
+    // 系统当前实际状态；查询失败时按"与目标不一致"处理，退化为照常执行（失败原因记日志，不静默吞掉）
+    let actual = match auto.is_enabled() {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!("读取开机自启状态失败: {e}，改为直接执行变更");
+            !settings.auto_start
+        }
+    };
+    if actual == settings.auto_start {
+        log::info!("开机自启无需变更（系统当前状态已为 {}）", settings.auto_start);
+        return Ok(());
+    }
     if settings.auto_start {
         auto.enable().map_err(|e| format!("开机自启启用失败: {e}"))?;
         log::info!("开机自启已启用");
