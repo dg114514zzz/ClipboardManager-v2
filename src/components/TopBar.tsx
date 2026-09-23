@@ -1,4 +1,4 @@
-import { GearIcon, SearchIcon, TrashIcon } from "./Icons";
+import { FilterIcon, GearIcon, SearchIcon, TrashIcon } from "./Icons";
 
 interface Props {
   search: string;
@@ -7,10 +7,12 @@ interface Props {
   selectedCount: number;
   onToggleMultiSelect: () => void;
   onOpenSettings: () => void;
+  onOpenFilter: () => void;
+  filterActive: boolean; // 筛选生效中（非"全部"）时图标高亮，避免用户困惑"记录怎么少了"
   onClearAll: () => void;
 }
 
-export default function TopBar({ search, onSearch, multiSelect, selectedCount, onToggleMultiSelect, onOpenSettings, onClearAll }: Props) {
+export default function TopBar({ search, onSearch, multiSelect, selectedCount, onToggleMultiSelect, onOpenSettings, onOpenFilter, filterActive, onClearAll }: Props) {
   return (
     <header className="flex items-center gap-3 px-4 py-3 border-b border-border bg-bg-primary flex-shrink-0">
       {/* 搜索框（占主） */}
@@ -46,6 +48,16 @@ export default function TopBar({ search, onSearch, multiSelect, selectedCount, o
         className="p-1.5 rounded-md hover:bg-bg-hover text-text-secondary hover:text-text-primary"
       >
         <TrashIcon />
+      </button>
+
+      {/* 筛选：按记录类型过滤；生效中时图标变蓝提示 */}
+      <button
+        onClick={onOpenFilter}
+        title={filterActive ? "筛选（已生效）" : "筛选"}
+        className="p-1.5 rounded-md hover:bg-bg-hover text-text-secondary hover:text-text-primary"
+        style={{ color: filterActive ? "#4a9eff" : undefined }}
+      >
+        <FilterIcon />
       </button>
 
       {/* 设置齿轮 */}

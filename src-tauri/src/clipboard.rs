@@ -402,8 +402,11 @@ fn process_image_job(app: &AppHandle, db: &Database, job: &BufferJob) -> Result<
     if let Err(e) = db.generate_thumbnail_from_rgba(id, &rgba) {
         log::error!("生成缩略图失败 id={id}: {e}");
     }
-    if let Err(e) = db.enforce_image_quota() {
-        log::error!("图片配额清理失败: {e}");
+    // "一直保留"时不清理图片（用户选择彻底不删）
+    if !retention_forever(app) {
+        if let Err(e) = db.enforce_image_quota() {
+            log::error!("图片配额清理失败: {e}");
+        }
     }
     app.emit("clipboard-updated", &item).map_err(|e| e.to_string())?;
     Ok(())
@@ -513,8 +516,11 @@ fn try_process_image(
     if let Err(e) = db.generate_thumbnail_from_rgba(id, &rgba) {
         log::error!("生成缩略图失败 id={id}: {e}");
     }
-    if let Err(e) = db.enforce_image_quota() {
-        log::error!("图片配额清理失败: {e}");
+    // "一直保留"时不清理图片（用户选择彻底不删）
+    if !retention_forever(app) {
+        if let Err(e) = db.enforce_image_quota() {
+            log::error!("图片配额清理失败: {e}");
+        }
     }
     app.emit("clipboard-updated", &item).map_err(|e| e.to_string())?;
     Ok(true)
@@ -602,6 +608,18 @@ fn process_file_record(
     log::info!("文件记录入库 id={id} {} 个文件", paths.len());
     app.emit("clipboard-updated", &item).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// 用户是否选择了"一直保留"（retention_days = 0）。
+/// 此时禁用一切自动清理——既包括按天数清理（db::cleanup_expired 内部判断），
+/// 也包括图片 1GB 配额清理（调用处判断）
+fn retention_forever(app: &AppHandle) -> bool {
+    let state = app.state::<crate::AppState>();
+    let cfg = match state.config.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    cfg.retention_days == 0
 }
 
 fn now_iso() -> String {

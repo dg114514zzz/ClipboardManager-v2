@@ -39,9 +39,10 @@ interface Props {
   onPin: (id: number) => void;
   onDelete: (id: number) => void;
   onReveal: (paths: string[]) => void;
+  onOpenImage: (path: string) => void;
 }
 
-export default function ClipboardItemRow({ item, invalid, multiSelect, selectIndex, onToggleSelect, onCopy, onFavorite, onPin, onDelete, onReveal }: Props) {
+export default function ClipboardItemRow({ item, invalid, multiSelect, selectIndex, onToggleSelect, onCopy, onFavorite, onPin, onDelete, onReveal, onOpenImage }: Props) {
   return (
     <div
       onClick={() => (multiSelect ? onToggleSelect(item) : onCopy(item.id))}
@@ -83,7 +84,12 @@ export default function ClipboardItemRow({ item, invalid, multiSelect, selectInd
       <div className="flex-1 min-w-0">
         {item.item_type === "image" ? (
           <>
-            <Thumbnail thumbPath={item.thumbnail_path} />
+            {/* 多选模式下不传 onOpen：此时点缩略图是"选择"，不显示查看大图按钮，避免与批量操作冲突 */}
+            <Thumbnail
+              thumbPath={item.thumbnail_path}
+              imagePath={item.image_path}
+              onOpen={multiSelect ? undefined : onOpenImage}
+            />
             <p className="text-sm text-text-primary mt-1 truncate">{imageTitle(item.source_app, item.created_at)}</p>
           </>
         ) : item.item_type === "file" ? (

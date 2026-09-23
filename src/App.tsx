@@ -8,6 +8,8 @@ import ItemList from "./components/ItemList";
 import StatusBar from "./components/StatusBar";
 import SettingsModal from "./components/SettingsModal";
 import ClearConfirmModal from "./components/ClearConfirmModal";
+import ImageViewer from "./components/ImageViewer";
+import FilterModal from "./components/FilterModal";
 import Toast from "./components/Toast";
 
 export default function App() {
@@ -20,6 +22,11 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // 查看大图：存被打开记录的原图路径，null = 未打开
+  const [viewImagePath, setViewImagePath] = useState<string | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  // 类型筛选：空数组 = 显示全部；勾选 1~2 类则只显示这些类型（切换标签/搜索时保持生效）
+  const [typeFilter, setTypeFilter] = useState<ItemType[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   // 多选已选记录：按选择顺序保存 {id,type}，序号 = 数组下标 + 1；取消后自动重排
@@ -89,12 +96,22 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [search, showToast]);
 
-  // 展示列表：搜索时用搜索结果（收藏标签下再过滤），否则用全部记录
+  // 展示列表：搜索时用搜索结果（收藏标签下再过滤），最后叠加类型筛选
   const visibleItems = useMemo(() => {
     const list = searchResults ?? items;
-    if (tab !== "favorites") return list;
-    return list.filter((i) => i.is_favorite);
-  }, [searchResults, items, tab]);
+    const byTab = tab !== "favorites" ? list : list.filter((i) => i.is_favorite);
+    if (typeFilter.length === 0) return byTab;
+    return byTab.filter((i) => typeFilter.includes(i.item_type));
+  }, [searchResults, items, tab, typeFilter]);
+
+  // 筛选勾选：已选则取消；否则追加（上限 2 项，UI 已禁用，这里是双保险）
+  const toggleTypeFilter = useCallback((t: ItemType) => {
+    setTypeFilter((prev) => {
+      if (prev.includes(t)) return prev.filter((x) => x !== t);
+      if (prev.length >= 2) return prev;
+      return [...prev, t];
+    });
+  }, []);
 
   // 失效检测：对可见的 file 记录惰性检查文件存在性（文档 6.2）
   useEffect(() => {
@@ -337,6 +354,8 @@ export default function App() {
           selectedCount={selected.length}
           onToggleMultiSelect={handleTopBarMulti}
           onOpenSettings={() => setShowSettings(true)}
+          onOpenFilter={() => setShowFilter(true)}
+          filterActive={typeFilter.length > 0}
           onClearAll={() => setShowClearConfirm(true)}
         />
         <TabBar tab={tab} onTab={setTab} sortAsc={sortAsc} onToggleSort={() => setSortAsc((v) => !v)} />
@@ -357,6 +376,7 @@ export default function App() {
           onPin={togglePin}
           onDelete={deleteItem}
           onReveal={revealFile}
+          onOpenImage={setViewImagePath}
         />
       </div>
       {/* 底部状态栏：钉死在根容器底部 */}
@@ -375,12 +395,22 @@ export default function App() {
           onRequestMove={() => {}} // 数据迁移在点"保存"时触发
         />
       )}
+      {showFilter && (
+        <FilterModal
+          selected={typeFilter}
+          onToggle={toggleTypeFilter}
+          onReset={() => setTypeFilter([])}
+          onClose={() => setShowFilter(false)}
+        />
+      )}
       {showClearConfirm && (
         <ClearConfirmModal
           onCancel={() => setShowClearConfirm(false)}
           onConfirm={clearAll}
         />
       )}
+      {/* 大图查看器：最上层覆盖，Esc / 点图片外区域 / 右上角 × 关闭 */}
+      {viewImagePath && <ImageViewer path={viewImagePath} onClose={() => setViewImagePath(null)} />}
       <Toast message={toast} />
     </div>
   );

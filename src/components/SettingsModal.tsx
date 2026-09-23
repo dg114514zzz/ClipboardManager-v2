@@ -3,7 +3,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { Settings } from "../types";
 import { CheckIcon } from "./Icons";
 
-const RETENTION_OPTIONS = [1, 3, 5, 7, 10, 15, 30];
+// 保留天数选项；0 = 一直保留（不做任何自动清理，含图片 1GB 配额）
+const RETENTION_OPTIONS = [1, 3, 5, 7, 10, 15, 30, 0];
 
 interface Props {
   settings: Settings;
@@ -55,7 +56,7 @@ export default function SettingsModal({ settings, onCancel, onSave, onRequestMov
         >
           {RETENTION_OPTIONS.map((d) => (
             <option key={d} value={d} style={{ color: "#f0f0f0", background: "#0d0d0d" }}>
-              {d} 天
+              {d === 0 ? "一直保留（不自动删除）" : `${d} 天`}
             </option>
           ))}
         </select>

@@ -282,6 +282,7 @@ pub fn run() {
             commands::check_files_exist,
             commands::reveal_file,
             commands::get_thumbnail_base64,
+            commands::get_image_base64,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

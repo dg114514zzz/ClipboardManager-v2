@@ -13,9 +13,10 @@ interface Props {
   onPin: (id: number) => void;
   onDelete: (id: number) => void;
   onReveal: (paths: string[]) => void;
+  onOpenImage: (path: string) => void;
 }
 
-export default function ItemList({ items, invalidIds, multiSelect, selectIndex, onToggleSelect, onCopy, onFavorite, onPin, onDelete, onReveal }: Props) {
+export default function ItemList({ items, invalidIds, multiSelect, selectIndex, onToggleSelect, onCopy, onFavorite, onPin, onDelete, onReveal, onOpenImage }: Props) {
   if (items.length === 0) return <EmptyState />;
   return (
     <div className="h-full overflow-y-auto">
@@ -32,6 +33,7 @@ export default function ItemList({ items, invalidIds, multiSelect, selectIndex, 
           onPin={onPin}
           onDelete={onDelete}
           onReveal={onReveal}
+          onOpenImage={onOpenImage}
         />
       ))}
     </div>

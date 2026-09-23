@@ -237,6 +237,24 @@ pub fn get_thumbnail_base64(db: State<'_, Arc<Database>>, path: String) -> Resul
     ))
 }
 
+/// 读取原图 → base64 data URI（供大图查看器使用）。与缩略图命令分开：查看器需要完整分辨率。
+/// 路径校验限死在 images 目录内（大小写不敏感前缀），防止任意文件读取
+#[tauri::command]
+pub fn get_image_base64(db: State<'_, Arc<Database>>, path: String) -> Result<String, String> {
+    let images = db.images_dir.to_string_lossy().to_lowercase();
+    let p = path.to_lowercase();
+    if !p.starts_with(&images) {
+        log::warn!("非法图片路径: {path}");
+        return Err("invalid path".into());
+    }
+    let bytes = std::fs::read(&path).map_err(|e| format!("读取图片失败: {e}"))?;
+    log::info!("加载原图查看: {path}（{} 字节）", bytes.len());
+    Ok(format!(
+        "data:image/png;base64,{}",
+        base64::engine::general_purpose::STANDARD.encode(&bytes)
+    ))
+}
+
 /// 点击记录 → 放回剪贴板（文本写文本；图片写位图；文件写 CF_HDROP）
 /// 写剪贴板会触发 WM_CLIPBOARDUPDATE，库内去重保证不产生重复记录。
 /// 返回 Ok(提示消息)，空串表示无额外提示；Err 为复制失败。

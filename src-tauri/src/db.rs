@@ -625,8 +625,12 @@ impl Database {
         Ok(total)
     }
 
-    /// 清理：删除非收藏且超过保留天数的记录（含关联原图/缩略图）；收藏永不清理
+    /// 清理：删除非收藏且超过保留天数的记录（含关联原图/缩略图）；收藏永不清理。
+    /// retention_days = 0 表示用户选择"一直保留"：不做任何自动删除，直接返回
     pub fn cleanup_expired(&self, retention_days: i64) -> Result<usize, String> {
+        if retention_days <= 0 {
+            return Ok(0);
+        }
         let cutoff = (Utc::now() - Duration::days(retention_days))
             .format("%Y-%m-%dT%H:%M:%S%.3fZ")
             .to_string();
